@@ -1,19 +1,83 @@
-# create_vectorstore.py
-
-from rag_pipeline.retriever import Retriever
+import pandas as pd
+import warnings
+from langchain_community.vectorstores import Chroma
+from langchain.text_splitter import CharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_core.documents import Document
 
-CSV_PATH = "data/f1Data/results.csv"
-COLUMN = "text"
-PERSIST_DIR = "./chromadb"
+# Suppress warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", category=UserWarning)
 
-if __name__ == "__main__":
-    embedding_function = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-    retriever = Retriever(embedding_function, persist_directory=PERSIST_DIR)
+# File paths
+base_path = "../data/f1Data/"
+results = pd.read_csv(base_path + "results.csv")
+drivers = pd.read_csv(base_path + "drivers.csv")
+constructors = pd.read_csv(base_path + "constructors.csv")
+races = pd.read_csv(base_path + "races.csv")
+circuits = pd.read_csv(base_path + "circuits.csv")
+status = pd.read_csv(base_path + "status.csv")
 
-    documents = retriever.load_documents_from_csv(CSV_PATH, column=COLUMN)
-    chunks = retriever.split_documents(documents)
-    vectorstore = retriever.build_vectorstore(chunks)
-    vectorstore.persist()
+# Merge datasets
+df = results \
+    .merge(drivers, on="driverId", how="left") \
+    .merge(constructors, on="constructorId", how="left", suffixes=("", "_constructor")) \
+    .merge(races, on="raceId", how="left", suffixes=("", "_race")) \
+    .merge(circuits, on="circuitId", how="left", suffixes=("", "_circuit")) \
+    .merge(status, on="statusId", how="left")
 
-    print("✅ Vector store created and saved to", PERSIST_DIR)
+# DEBUG: Uncomment the line below to see all column names after merge
+# print(df.columns.tolist())
+
+# Rename columns safely (print actual column names if unsure)
+df = df.rename(columns={
+    "forename": "driver_forename",
+    "surname": "driver_surname",
+    "name": "constructor_name",        # from constructors
+    "name_race": "race_name",          # from races
+    "circuitRef": "circuit_name"       # from circuits
+})
+
+# Ensure required columns exist
+required_columns = ["driver_forename", "driver_surname", "constructor_name", "grid", "positionOrder", "year", "status"]
+missing = [col for col in required_columns if col not in df.columns]
+if missing:
+    print("Missing columns in DataFrame:", missing)
+    exit(1)
+
+# Drop rows with missing values in important columns
+df = df.dropna(subset=required_columns)
+
+# Create documents for RAG
+documents = []
+for _, row in df.iterrows():
+    driver_name = f"{row['driver_forename']} {row['driver_surname']}"
+    constructor = row['constructor_name']
+    race = row.get("race_name", "Unknown Race")
+    year = int(row['year'])
+    grid = int(row['grid'])
+    position = int(row['positionOrder'])
+    status_text = row['status']
+    circuit = row.get("circuit_name", "Unknown Circuit")
+
+    content = (
+        f"In the {year} {race} at {circuit}, {driver_name} ({constructor}) "
+        f"started from grid position {grid} and finished at position {position}. "
+        f"Status: {status_text}."
+    )
+    documents.append(Document(page_content=content))
+
+# Split and embed
+splitter = CharacterTextSplitter(chunk_size=500, chunk_overlap=0)
+split_docs = splitter.split_documents(documents)
+
+embedding_function = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+
+vectorstore = Chroma.from_documents(
+    documents=split_docs,
+    embedding=embedding_function,
+    persist_directory="./chromadb"
+)
+
+vectorstore.persist()
+print("Vector store created with readable names and saved to ./chromadb")

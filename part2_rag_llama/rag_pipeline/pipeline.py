@@ -1,48 +1,45 @@
 # rag_pipeline/pipeline.py
 
-from langchain_huggingface import HuggingFaceEmbeddings
-from langchain.chains import RetrievalQA
-from langchain_core.language_models import BaseLLM
+from langchain_community.vectorstores import Chroma
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.llms import Ollama
-from .retriever import Retriever
+from langchain.chains import RetrievalQA
+from langchain.text_splitter import CharacterTextSplitter
+from langchain_core.documents import Document
+import pandas as pd
 
+from .retriever import RetrieverTool
 
 class RAGPipeline:
     def __init__(
         self,
         csv_path: str,
-        csv_column: str = "text",
-        model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
         persist_directory: str = "./chromadb",
     ):
-        """
-        Initialize the full RAG pipeline.
-        """
-        self.csv_path = csv_path
-        self.csv_column = csv_column
         self.persist_directory = persist_directory
+        self.embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
-        # 1. Set up embeddings and retriever
-        self.embedding_function = HuggingFaceEmbeddings(model_name=model_name)
-        self.retriever_tool = Retriever(self.embedding_function, persist_directory)
+        self.retriever_tool = RetrieverTool()
 
-        # 2. Load and prepare documents
-        documents = self.retriever_tool.load_documents_from_csv(csv_path, column=csv_column)
-        chunks = self.retriever_tool.split_documents(documents)
+    
+        documents = self.retriever_tool.load_documents_from_csv(csv_path)
+        splitter = CharacterTextSplitter(chunk_size=500, chunk_overlap=0)
+        split_docs = splitter.split_documents(documents)
 
-        # 3. Build vector store and retriever
-        self.vectorstore = self.retriever_tool.build_vectorstore(chunks)
-        self.retriever = self.retriever_tool.get_retriever(self.vectorstore)
+    
+        self.vectorstore = Chroma(
+            persist_directory=self.persist_directory,
+            embedding_function=self.embedding_model
+        )
 
-        # 4. Load local LLM via Ollama
-        self.llm: BaseLLM = Ollama(model="llama2")
+        
+        self.llm = Ollama(model="llama2")
 
-        # 5. Setup QA Chain
-        self.qa_chain = RetrievalQA.from_chain_type(llm=self.llm, retriever=self.retriever)
+       
+        self.qa_chain = RetrievalQA.from_chain_type(
+            llm=self.llm,
+            retriever=self.vectorstore.as_retriever()
+        )
 
-    def ask(self, question: str) -> str:
-        """
-        Ask a question to the RAG pipeline and return the answer.
-        """
-        result = self.qa_chain.run(question)
-        return result
+    def run(self, query: str) -> str:
+        return self.qa_chain.run(query)

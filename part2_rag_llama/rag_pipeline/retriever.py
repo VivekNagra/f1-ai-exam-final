@@ -1,47 +1,24 @@
-import os
-from langchain_community.vectorstores import Chroma
-from langchain.text_splitter import CharacterTextSplitter
 from langchain_core.documents import Document
+import pandas as pd
 
-
-class Retriever:
-    def __init__(self, embedding_function, persist_directory: str = "./chromadb"):
-        """
-        Initialize the Retriever with embedding and Chroma vectorstore.
-        """
-        self.embedding_function = embedding_function
-        self.persist_directory = persist_directory
-
-    def load_documents_from_csv(self, csv_path: str, column: str = "text"):
-        """
-        Load and convert a CSV column into LangChain Document objects.
-        """
-        import pandas as pd
-
+class RetrieverTool:
+    def load_documents_from_csv(self, csv_path: str) -> list[Document]:
         df = pd.read_csv(csv_path)
-        return [Document(page_content=row[column]) for _, row in df.iterrows() if pd.notna(row[column])]
 
-    def split_documents(self, documents, chunk_size: int = 500, chunk_overlap: int = 50):
-        """
-        Split documents into smaller chunks for vector storage.
-        """
-        splitter = CharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
-        return splitter.split_documents(documents)
+        # Optional: Drop rows with missing essential values
+        df = df.dropna(subset=['raceId', 'driverId', 'constructorId', 'positionOrder'])
 
-    def build_vectorstore(self, documents):
-        """
-        Create and persist a Chroma vector store.
-        """
-        vectorstore = Chroma.from_documents(
-            documents,
-            embedding=self.embedding_function,
-            persist_directory=self.persist_directory,
-        )
-        vectorstore.persist()
-        return vectorstore
+        documents = []
+        for _, row in df.iterrows():
+            content = (
+                f"Race ID: {row['raceId']}, "
+                f"Driver ID: {row['driverId']}, "
+                f"Constructor ID: {row['constructorId']}, "
+                f"Position: {row['positionOrder']}, "
+                f"Grid: {row['grid']}, "
+                f"Laps: {row['laps']}, "
+                f"Status ID: {row['statusId']}"
+            )
+            documents.append(Document(page_content=content))
 
-    def get_retriever(self, vectorstore):
-        """
-        Return a retriever instance from the Chroma vectorstore.
-        """
-        return vectorstore.as_retriever()
+        return documents

@@ -4,3 +4,21 @@ scikit-learn
 matplotlib
 seaborn
 jupyter
+
+
+# Part 1 - Data Analysis
+pandas
+numpy
+scikit-learn
+matplotlib
+seaborn
+jupyter
+
+# Part 2 - RAG LLM Search Pipeline
+langchain
+langchain-community
+langchain-huggingface
+chromadb
+sentence-transformers
+torch
+transformers
