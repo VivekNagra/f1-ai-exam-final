@@ -113,7 +113,7 @@ pip install langchain chromadb sentence-transformers langchain-community langcha
 
 ---
 
-## 📝 Notes
+## Notes
 
 - The RAG system uses local LLaMA2 via Ollama.
 - Questions can be any F1-related queries, especially around races, drivers, constructors, or positions.
