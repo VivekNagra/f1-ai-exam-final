@@ -1,0 +1,62 @@
+# Virtual environments
+venv/
+env/
+*/__pycache__/
+*.pyc
+
+# System files
+.DS_Store
+
+# Data
+data/
+*.csv
+*.xlsx
+
+# App artifacts
+*.pkl
+*.h5
+*.db
+
+# Logs and temp
+*.log
+*.tmp
+*.bak
+
+# Notebook checkpoints
+.ipynb_checkpoints/
+
+# Frontend/build artifacts
+node_modules/
+dist/
+build/
+
+# Model files
+*.pt
+*.bin
+*.onnx
+
+# RAG vectorstore data
+chromadb/
+
+# VSCode
+.vscode/
+
+# Type checker output
+.mypy_cache/
+
+# Test cache
+.pytest_cache/
+
+# Coverage reports
+htmlcov/
+
+# Mac system file
+.AppleDouble
+.LSOverride
+
+# Thumbnails
+._*
+
+# Python egg/metadata
+*.egg-info/
+.eggs/
