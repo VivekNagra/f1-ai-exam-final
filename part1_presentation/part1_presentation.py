@@ -2,18 +2,18 @@ import streamlit as st
 import joblib
 import pandas as pd
 
-# Load trained model from part 1 of the exam
+
 model = joblib.load("model.pkl")
 
-# Load data for driver, constructor, and race names
+
 drivers = pd.read_csv("../data/f1Data/drivers.csv")
 constructors = pd.read_csv("../data/f1Data/constructors.csv")
 races = pd.read_csv("../data/f1Data/races.csv")
 
-# Mapping: driver name → driverId
+# Mapping: driver name to driverId
 driver_map = dict(zip(drivers['forename'] + " " + drivers['surname'], drivers['driverId']))
 
-# Mapping: constructor name → constructorId
+# Mapping: constructor name to constructorId
 constructor_map = dict(zip(constructors['name'], constructors['constructorId']))
 
 # Sort races by year descending, then round ascending
@@ -23,7 +23,8 @@ races = races.sort_values(by=["year", "round"], ascending=[False, True])
 races['race_name'] = races['year'].astype(str) + " - " + races['name']
 race_map = dict(zip(races['race_name'], zip(races['year'], races['round'])))
 
-# ---- Streamlit App ----
+
+# Streamlit App
 
 st.title("🏎️ F1 Podium Predictor")
 
