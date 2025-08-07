@@ -9,7 +9,7 @@ from langchain_core.documents import Document
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", category=UserWarning)
 
-# File paths
+
 base_path = "../data/f1Data/"
 results = pd.read_csv(base_path + "results.csv")
 drivers = pd.read_csv(base_path + "drivers.csv")
@@ -18,7 +18,7 @@ races = pd.read_csv(base_path + "races.csv")
 circuits = pd.read_csv(base_path + "circuits.csv")
 status = pd.read_csv(base_path + "status.csv")
 
-# Merge datasets
+
 df = results \
     .merge(drivers, on="driverId", how="left") \
     .merge(constructors, on="constructorId", how="left", suffixes=("", "_constructor")) \
@@ -26,29 +26,26 @@ df = results \
     .merge(circuits, on="circuitId", how="left", suffixes=("", "_circuit")) \
     .merge(status, on="statusId", how="left")
 
-# DEBUG: Uncomment the line below to see all column names after merge
-# print(df.columns.tolist())
 
-# Rename columns safely (print actual column names if unsure)
 df = df.rename(columns={
     "forename": "driver_forename",
     "surname": "driver_surname",
-    "name": "constructor_name",        # from constructors
-    "name_race": "race_name",          # from races
-    "circuitRef": "circuit_name"       # from circuits
+    "name": "constructor_name",        
+    "name_race": "race_name",          
+    "circuitRef": "circuit_name"      
 })
 
-# Ensure required columns exist
+
 required_columns = ["driver_forename", "driver_surname", "constructor_name", "grid", "positionOrder", "year", "status"]
 missing = [col for col in required_columns if col not in df.columns]
 if missing:
     print("Missing columns in DataFrame:", missing)
     exit(1)
 
-# Drop rows with missing values in important columns
+
 df = df.dropna(subset=required_columns)
 
-# Create documents for RAG
+
 documents = []
 for _, row in df.iterrows():
     driver_name = f"{row['driver_forename']} {row['driver_surname']}"
@@ -67,7 +64,7 @@ for _, row in df.iterrows():
     )
     documents.append(Document(page_content=content))
 
-# Split and embed
+
 splitter = CharacterTextSplitter(chunk_size=500, chunk_overlap=0)
 split_docs = splitter.split_documents(documents)
 

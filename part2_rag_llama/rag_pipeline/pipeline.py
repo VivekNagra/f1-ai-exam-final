@@ -1,5 +1,3 @@
-# rag_pipeline/pipeline.py
-
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.llms import Ollama

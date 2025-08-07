@@ -5,7 +5,7 @@ class RetrieverTool:
     def load_documents_from_csv(self, csv_path: str) -> list[Document]:
         df = pd.read_csv(csv_path)
 
-        # Optional: Drop rows with missing essential values
+        
         df = df.dropna(subset=['raceId', 'driverId', 'constructorId', 'positionOrder'])
 
         documents = []
