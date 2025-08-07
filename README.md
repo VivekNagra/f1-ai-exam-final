@@ -8,14 +8,14 @@ This repository contains the final project for the AI course exam. It includes:
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ## Setup Instructions
 
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/f1-ai-exam-final.git
+git clone https://github.com/VivekNagra/f1-ai-exam-final.git
 cd f1-ai-exam-final
 ```
 
